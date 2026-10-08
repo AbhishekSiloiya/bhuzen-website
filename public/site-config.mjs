@@ -2,8 +2,9 @@
 // A Web3Forms public access key routes delivery; recipient text does not route mail.
 export const siteConfig=Object.freeze({
   deliveryEnabled:false,
-  recipientVerified:false,
-  recipient:'',
+  // Owner confirmed this spelling on 8 October 2026; provider routing is still pending.
+  recipientVerified:true,
+  recipient:'aabhisheksiloiya708@gmail.com',
   accessKey:'',
   allowedOrigins:[],
   resourcesEnabled:false,
