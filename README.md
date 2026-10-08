@@ -1,12 +1,14 @@
 # Bhuzen Website
 
-Production-package preparation from the approved V3. This branch is not deployed or launch-approved.
+Staging package from the approved V3. Hosted review: https://abhisheksiloiya.github.io/bhuzen-website/. This is not the bhuzen.com production release or launch approval.
 
 ## Local review
 
 Run `npm test`, then `python3 -m http.server 8794 --bind 127.0.0.1 --directory public`.
 
 Only `public/` is deployable. The GitHub Pages workflow is manual and uploads only that directory. It does not configure a custom domain. Staging retains noindex and robots disallow rules. Those are indexing signals, not access controls: a published staging URL would be publicly accessible unless the host separately protects it.
+
+The 404 page uses the staging project root `/bhuzen-website/` so assets and return links also work for nested missing URLs without JavaScript. Before the custom-domain release, regenerate those root paths as `/` and verify hosted 404 navigation again. Other pages use relative paths and remain portable. Canonical tags and sitemap already reference the intended production domain, not staging.
 
 ## Delivery
 
@@ -22,7 +24,7 @@ Form details remain on failure; ambiguous failures warn against duplicate retrie
 
 - Confirm recipient and delivery configuration; verify real enquiry/resource delivery.
 - Clear final PDFs, engagement commitments, evidence use and production policies.
-- Create/approve the remote repository and staging environment, and verify the hosted workflow.
+- Public repository and staging environment created with owner approval; reverify the hosted workflow after each release.
 - Complete accessibility/performance/SEO, legacy URL and custom 404 checks.
 - Preserve Wix content/data and DNS/email records; approve rollback and cutover.
 
