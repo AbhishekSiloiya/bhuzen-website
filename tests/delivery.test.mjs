@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 const api=await import('../public/lead-forms.mjs').catch(()=>({}));
 const config={deliveryEnabled:true,recipientVerified:true,recipient:'owner@example.com',accessKey:'00000000-0000-4000-8000-000000000001',allowedOrigins:['https://staging.example.com'],resourcesEnabled:false};
 const pageUrl='https://staging.example.com/bhuzen/book-online/index.html?revenue=2000000&email=private@example.com#enquire';
-test('owner-confirmed inbox does not activate unconfigured delivery',async()=>{
+test('verified Bhuzen routing stays disabled before activation',async()=>{
  const {siteConfig}=await import('../public/site-config.mjs');
- assert.equal(siteConfig.recipient,'aabhisheksiloiya708@gmail.com');
+ assert.equal(siteConfig.recipient,'aabhisheksiloya708@gmail.com');
  assert.equal(siteConfig.recipientVerified,true);
  assert.equal(siteConfig.deliveryEnabled,false);
- assert.equal(siteConfig.accessKey,'');
+ assert.equal(siteConfig.accessKey,'6e792ae7-dbed-46b8-8429-388ea9c6971b');
  assert.deepEqual(siteConfig.allowedOrigins,[]);
  assert.equal(siteConfig.resourcesEnabled,false);
  assert.equal(api.deliveryGate(siteConfig,'http://127.0.0.1:8794/','enquiry-form').ready,false);
