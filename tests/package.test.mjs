@@ -2,6 +2,12 @@ import test from 'node:test';import assert from 'node:assert/strict';import {exi
 const root=resolve('public');
 const stagingPath='/bhuzen-website/';
 const walk=p=>existsSync(p)?readdirSync(p,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(resolve(p,e.name)):[resolve(p,e.name)]):[];
+test('staging privacy describes hosted processing without pretending production is activated',()=>{
+ const h=readFileSync(resolve(root,'privacy/index.html'),'utf8');
+ for(const text of ['Privacy on this staging site','BHUZEN LTD','GitHub Pages','Web3Forms','aabhisheksiloya708@gmail.com','not yet enabled','retention','ico.org.uk'])assert.ok(h.includes(text),text);
+ assert.ok(!h.includes('This statement describes the local review site'));
+ assert.ok(!h.includes('tel:'));
+});
 test('public staging package excludes comparisons and private artefacts',()=>{
  assert.ok(existsSync(resolve(root,'index.html')),'production export exists');const files=walk(root),pages=files.filter(f=>f.endsWith('.html'));assert.equal(pages.length,17);
  assert.ok(!files.some(f=>/compare|preservation|assessment-source|\.jpg\.json|\.webp\.json|\.ttf\.json|\.pdf$|CNAME|\.git\//.test(f)));
