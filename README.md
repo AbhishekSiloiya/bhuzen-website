@@ -8,7 +8,20 @@ Run `npm test`, then `python3 -m http.server 8794 --bind 127.0.0.1 --directory p
 
 Only `public/` is deployable. The GitHub Pages workflow is manual and uploads only that directory. It does not configure a custom domain. Staging retains noindex and robots disallow rules. Those are indexing signals, not access controls: a published staging URL would be publicly accessible unless the host separately protects it.
 
-The 404 page uses the staging project root `/bhuzen-website/` so assets and return links also work for nested missing URLs without JavaScript. Before the custom-domain release, regenerate those root paths as `/` and verify hosted 404 navigation again. Other pages use relative paths and remain portable. Canonical tags and sitemap already reference the intended production domain, not staging.
+The staging source's 404 uses `/bhuzen-website/` so nested missing URLs recover without JavaScript. The production candidate builder rewrites those paths to `/`. Other pages use relative paths. Canonicals and sitemap reference the intended production domain; social URLs/images use the actual build profile's origin.
+
+## Isolated release profiles
+
+- `npm run build`: writes a fresh generated staging directory under ignored `dist/`, with noindex/disallow retained.
+- `npm run build:candidate`: writes a fresh root-domain candidate under `dist/`, still noindex with forms unchanged. It neither publishes nor configures the domain.
+- `node scripts/release.mjs --profile production --out /absolute/fresh/output`: optional explicit empty output directory. Existing non-empty output and public-source/ancestor paths are refused; no recursive deletion occurs.
+- Only after separate launch approval: `node scripts/release.mjs --profile production --approve-indexing`. This explicit build flag permits indexing in the generated artifact, not in the staging source. The 404 stays noindex. It does not certify policy/legal readiness, activate forms, change DNS or deploy anything.
+
+Generated output contains only allowlisted runtime files and `.nojekyll`; private/source-provenance files, PDFs, symlinks and CNAME are rejected. The current manual Pages workflow still uploads **public/** only, never `dist/`. A production deployment requires a separately reviewed/approved cutover step. Do not upload a local candidate merely because a build succeeded.
+
+Legacy routes `/general-7/`, `/general-clean/`, `/blank/` and `/blank-1/` now contain the full Commitment, Growth Briefing, Privacy and Accessibility content respectively. Their canonical tags name the primary routes. This preserves useful old links but is **not an HTTP 301** or a guarantee that a search engine will honour the preferred URL. No new redirect service is introduced.
+
+Page-specific Open Graph/Twitter metadata uses the approved founder portrait as a JPEG format derivative (1122×1402, no retouching), with a summary-card thumbnail rather than an invented result/testimonial image. Actual sharing-platform crop/cache rendering still requires a live sharing check. Never add private identifiers or confidential query parameters to metadata.
 
 ## Delivery
 
