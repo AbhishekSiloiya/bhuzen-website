@@ -2,6 +2,14 @@ import test from 'node:test';import assert from 'node:assert/strict';import {exi
 const root=resolve('public');
 const stagingPath='/bhuzen-website/';
 const walk=p=>existsSync(p)?readdirSync(p,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(resolve(p,e.name)):[resolve(p,e.name)]):[];
+test('privacy publishes only the owner-approved shortened contact location',()=>{
+ for(const route of ['privacy/index.html','blank/index.html']){
+  const h=readFileSync(resolve(root,route),'utf8');
+  assert.ok(h.includes('Contact location: Viotti Heights, Sandu Hills, Woolwich, SE18 6PA.'),route);
+  assert.ok(!/\bFlat\s*\d/i.test(h),'omitted private unit details must not be added');
+  assert.ok(!/Registered office:\s*Viotti/i.test(h),'shortened location must not be presented as the full registered office');
+ }
+});
 test('staging privacy describes hosted processing without pretending production is activated',()=>{
  const h=readFileSync(resolve(root,'privacy/index.html'),'utf8');
  for(const text of ['Privacy on this staging site','BHUZEN LTD','GitHub Pages','Web3Forms','aabhisheksiloya708@gmail.com','not yet enabled','retention','ico.org.uk'])assert.ok(h.includes(text),text);
