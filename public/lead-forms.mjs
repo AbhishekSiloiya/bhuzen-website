@@ -54,16 +54,23 @@ export async function sendPayload(payload,fetcher=globalThis.fetch,{timeoutMs=15
   }finally{clearTimeout(timer);}
 }
 
+export function formStateCopy(config,id,gate){
+  const production=config.siteMode==='production',resource=id==='resource-form';
+  const note=gate.ready?(resource?'We use your details to fulfil this request. Bhuzen will follow up by email; optional insights consent is separate.':'We use your details to respond to this enquiry. Please avoid confidential information.'):
+    production?(resource?'Playbook requests are not available by email yet. Nothing is sent. Please use Google booking to start a conversation.':'Email enquiries are not available yet. Nothing is sent; Google booking remains available.'):
+    resource?'Staging: playbook requests are awaiting publication and delivery clearance. Nothing is sent.':'Staging: enquiry delivery is not activated. Nothing is sent; Google booking remains available.';
+  return {note,unavailable:production?'Email requests are currently unavailable. Nothing has been sent. Please use the Google booking link to start a conversation.':'Delivery is not active in this staging build. Nothing has been sent. Please use the Google booking link to start a conversation.'};
+}
+
 export function mountLeadForms(config){
   for(const form of document.querySelectorAll('#enquiry-form,#resource-form,#channel-form')){
     const status=form.querySelector('.form-status'),button=form.querySelector('[type="submit"]'),note=form.querySelector('.form-note'),fields=form.querySelector('.lead-fields');
     const gate=deliveryGate(config,location.href,form.id);let busy=false,accepted=false;
-    if(!gate.ready){note.textContent=form.id==='resource-form'?'Staging: playbook requests are awaiting publication and delivery clearance. Nothing is sent.':'Staging: enquiry delivery is not activated. Nothing is sent; Google booking remains available.';}
-    else{note.textContent=form.id==='resource-form'?'We use your details to fulfil this request. Optional insights consent is separate.':'We use your details to respond to this enquiry. Please avoid confidential information.';}
+    const copy=formStateCopy(config,form.id,gate);note.textContent=copy.note;
     button.textContent=form.id==='resource-form'?'Request the playbook':form.id==='channel-form'?'Request an evaluation':'Send my enquiry';
     form.addEventListener('submit',async event=>{
       event.preventDefault();if(busy||accepted)return;if(!form.reportValidity())return;
-      if(!gate.ready){status.textContent='Delivery is not active in this staging build. Nothing has been sent. Please use the Google booking link to start a conversation.';status.dataset.state='unavailable';status.focus();return;}
+      if(!gate.ready){status.textContent=copy.unavailable;status.dataset.state='unavailable';status.focus();return;}
       const entries=Object.fromEntries(new FormData(form));
       if(entries.botcheck){status.textContent='We could not accept this request. Please use Google booking.';return;}
       let payload;try{payload=buildPayload({id:form.id,entries,config,pageUrl:location.href});}catch(error){status.textContent=error.message;status.dataset.state='error';status.focus();return;}

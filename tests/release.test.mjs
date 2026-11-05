@@ -26,7 +26,7 @@ test('production candidate repairs root 404 but remains noindex with delivery di
  const html=readFileSync(join(r.output,'404.html'),'utf8');
  assert.ok(html.includes('href="/style.css"'));assert.ok(!html.includes('/bhuzen-website/'));
  for(const f of walk(r.output).filter(f=>f.endsWith('.html')))assert.match(readFileSync(f,'utf8'),/noindex,nofollow/);
- assert.match(readFileSync(join(r.output,'site-config.mjs'),'utf8'),/deliveryEnabled:false/);
+ const generatedConfig=await import('node:url').then(({pathToFileURL})=>import(pathToFileURL(join(r.output,'site-config.mjs')).href));assert.equal(generatedConfig.siteConfig.deliveryEnabled,false);
  const home=readFileSync(join(r.output,'index.html'),'utf8');
  assert.match(home,/property="og:url" content="https:\/\/bhuzen.com\/"/);
  assert.match(home,/property="og:image" content="https:\/\/bhuzen.com\/assets\/bhuzen-social-portrait.jpg"/);

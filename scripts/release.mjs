@@ -1,11 +1,15 @@
 import {readFileSync,writeFileSync,readdirSync,mkdirSync,mkdtempSync,existsSync,copyFileSync,lstatSync} from 'node:fs';
 import {resolve,dirname,join,relative,extname,sep} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
+import {siteConfig} from '../public/site-config.mjs';
+import {deliveryGate} from '../public/lead-forms.mjs';
+import {productionContent} from './production-content.mjs';
 
 const project=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const source=join(project,'public');
 const productionOrigin='https://bhuzen.com';
 const stagingOrigin='https://abhisheksiloiya.github.io/bhuzen-website';
+export const productionConfirmation='PUBLISH BHUZEN.COM';
 export const legacyRoutes=Object.freeze({'general-7':'our-commitment','general-clean':'founders-evaluation','blank':'privacy','blank-1':'accessibility','contact':'resources'});
 const types=new Set(['.html','.css','.js','.mjs','.png','.jpg','.webp','.svg','.woff2','.ttf','.txt','.xml']);
 const escape=value=>String(value).replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+);)/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -45,10 +49,16 @@ function runtimeFiles(dir){
  });
 }
 
-export function buildRelease({profile='staging',indexable=false,launchApproved=false,output}={}){
+export function buildRelease({profile='staging',indexable=false,launchApproved=false,deliveryApproved=false,resourcesApproved=false,output}={}){
+ for(const flag of [indexable,launchApproved,deliveryApproved,resourcesApproved])if(typeof flag!=='boolean')throw new Error('Release approval flags must be boolean.');
  if(!['staging','production'].includes(profile))throw new Error('Unknown release profile.');
  if(indexable&&profile!=='production')throw new Error('Indexing requires the production profile.');
  if(indexable&&launchApproved!==true)throw new Error('Explicit launch approval is required before enabling indexing.');
+ if((deliveryApproved||resourcesApproved)&&profile!=='production')throw new Error('Delivery approval is only supported by the production profile.');
+ if((deliveryApproved||resourcesApproved)&&launchApproved!==true)throw new Error('Explicit launch approval is required before enabling delivery.');
+ if(resourcesApproved&&!deliveryApproved)throw new Error('Resource requests require approved delivery.');
+ const config=profile==='production'?{...siteConfig,siteMode:'production',deliveryEnabled:deliveryApproved===true,allowedOrigins:deliveryApproved?['https://bhuzen.com','https://www.bhuzen.com']:[],resourcesEnabled:resourcesApproved===true,resourcesCleared:resourcesApproved===true,resourceFulfilment:resourcesApproved?'manual':'pending'}:siteConfig;
+ if(deliveryApproved&&!deliveryGate(config,productionOrigin,'enquiry-form').ready)throw new Error('Verified Bhuzen delivery configuration is required.');
  const files=runtimeFiles(source);
  if(!output){const dist=join(project,'dist');mkdirSync(dist,{recursive:true});output=mkdtempSync(join(dist,profile+'-'));}
  output=resolve(output);
@@ -57,7 +67,8 @@ export function buildRelease({profile='staging',indexable=false,launchApproved=f
  mkdirSync(output,{recursive:true});
  for(const file of files){
   const route=relative(source,file),target=join(output,route);mkdirSync(dirname(target),{recursive:true});
-  if(route.endsWith('.html'))writeFileSync(target,decoratePage(readFileSync(file,'utf8'),{route,profile,indexable}));
+  if(route.endsWith('.html')){const sourceHtml=readFileSync(file,'utf8');writeFileSync(target,decoratePage(profile==='production'?productionContent(sourceHtml,{route,config}):sourceHtml,{route,profile,indexable}));}
+  else if(route==='site-config.mjs'&&profile==='production')writeFileSync(target,'export const siteConfig=Object.freeze('+JSON.stringify(config,null,2)+');\n');
   else if(route==='robots.txt')writeFileSync(target,indexable?'User-agent: *\nAllow: /\nSitemap: '+productionOrigin+'/sitemap.xml\n':'User-agent: *\nDisallow: /\n');
   else copyFileSync(file,target);
  }
@@ -65,11 +76,14 @@ export function buildRelease({profile='staging',indexable=false,launchApproved=f
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
- const args=process.argv.slice(2),known=new Set(['--profile','--out','--approve-indexing']);
+ const args=process.argv.slice(2),known=new Set(['--profile','--out','--approve-indexing','--approve-delivery','--approve-resources']);
+ if(args.some(key=>key.startsWith('--approve-'))&&process.env.BHUZEN_APPROVAL!==productionConfirmation)throw new Error('Explicit release approval phrase is required for activation flags.');
  const options={};
  for(let i=0;i<args.length;i++){
   const key=args[i];if(!known.has(key))throw new Error('Unknown release option: '+key);
   if(key==='--approve-indexing'){options.indexable=true;options.launchApproved=true;}
+  else if(key==='--approve-delivery'){options.deliveryApproved=true;options.launchApproved=true;}
+  else if(key==='--approve-resources'){options.resourcesApproved=true;options.launchApproved=true;}
   else {const value=args[++i];if(!value||value.startsWith('--'))throw new Error('Missing release option value.');options[key==='--profile'?'profile':'output']=value;}
  }
  console.log(JSON.stringify(buildRelease(options),null,2));

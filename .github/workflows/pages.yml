@@ -9,12 +9,19 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm test
+      - name: Refuse staging overwrite of a custom-domain site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/production-workflow.mjs --check-staging
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public
@@ -22,12 +29,22 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Recheck staging domain immediately before publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/production-workflow.mjs --check-staging
       - name: Deploy staging
         id: deployment
         uses: actions/deploy-pages@v4

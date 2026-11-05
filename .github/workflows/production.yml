@@ -1,0 +1,89 @@
+name: Prepare or publish production
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the approved package to Bhuzen Pages (false builds only)
+        type: boolean
+        default: false
+      enable_indexing:
+        description: Enable search indexing in the generated production package
+        type: boolean
+        default: false
+      enable_delivery:
+        description: Enable enquiry delivery for approved Bhuzen origins
+        type: boolean
+        default: false
+      enable_resources:
+        description: Enable owner-cleared manual playbook requests (requires delivery)
+        type: boolean
+        default: false
+      approval:
+        description: Enter PUBLISH BHUZEN.COM only after the separate launch gates are approved
+        type: string
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: bhuzen-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - run: npm test
+      - name: Build isolated production artifact
+        id: build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BHUZEN_PUBLISH: ${{ inputs.publish }}
+          BHUZEN_INDEXING: ${{ inputs.enable_indexing }}
+          BHUZEN_DELIVERY: ${{ inputs.enable_delivery }}
+          BHUZEN_RESOURCES: ${{ inputs.enable_resources }}
+          BHUZEN_APPROVAL: ${{ inputs.approval }}
+        run: node scripts/production-workflow.mjs
+      - name: Save candidate for review (not a deployment)
+        uses: actions/upload-artifact@v7
+        with:
+          name: bhuzen-production-candidate
+          path: ${{ steps.build.outputs.artifact_path }}
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload approved Pages artifact
+        if: ${{ inputs.publish }}
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ steps.build.outputs.artifact_path }}
+  deploy:
+    if: ${{ inputs.publish }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Recheck approved domain immediately before publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/production-workflow.mjs --check-production
+      - name: Publish approved production package
+        id: deployment
+        uses: actions/deploy-pages@v4
