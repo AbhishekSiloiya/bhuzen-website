@@ -14,7 +14,7 @@ test('staging release defaults closed and leaves public source unchanged',async(
  const {buildRelease}=await builder();const source=walk(resolve('public'));const before=source.map(hash);
  const result=buildRelease({output:fresh()});
  assert.equal(result.profile,'staging');assert.equal(result.indexable,false);
- assert.equal(result.pages,17);assert.equal(result.files,source.length);
+ assert.equal(result.pages,18);assert.equal(result.files,source.length);
  assert.ok(readFileSync(join(result.output,'robots.txt'),'utf8').includes('Disallow: /'));
  assert.ok(readFileSync(join(result.output,'404.html'),'utf8').includes('/bhuzen-website/style.css'));
  assert.deepEqual(source.map(hash),before);
@@ -67,7 +67,7 @@ test('release decoration rejects missing or duplicate indexing/canonical control
 });
 
 test('retained legacy routes contain substantive content with preferred canonicals',()=>{
- for(const [old,current]of Object.entries({'general-7':'our-commitment','general-clean':'founders-evaluation','blank':'privacy','blank-1':'accessibility'})){
+ for(const [old,current]of Object.entries({'general-7':'our-commitment','general-clean':'founders-evaluation','blank':'privacy','blank-1':'accessibility','contact':'resources'})){
   const legacy=readFileSync('public/'+old+'/index.html','utf8'),primary=readFileSync('public/'+current+'/index.html','utf8');
   assert.ok(legacy.includes('rel="canonical" href="https://bhuzen.com/'+current+'/"'),old);
   assert.equal(legacy.match(/<main[\s\S]*?<\/main>/)?.[0],primary.match(/<main[\s\S]*?<\/main>/)?.[0],old+' retains full content');

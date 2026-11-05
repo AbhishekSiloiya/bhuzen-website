@@ -6,7 +6,7 @@ const project=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const source=join(project,'public');
 const productionOrigin='https://bhuzen.com';
 const stagingOrigin='https://abhisheksiloiya.github.io/bhuzen-website';
-export const legacyRoutes=Object.freeze({'general-7':'our-commitment','general-clean':'founders-evaluation','blank':'privacy','blank-1':'accessibility'});
+export const legacyRoutes=Object.freeze({'general-7':'our-commitment','general-clean':'founders-evaluation','blank':'privacy','blank-1':'accessibility','contact':'resources'});
 const types=new Set(['.html','.css','.js','.mjs','.png','.jpg','.webp','.svg','.woff2','.ttf','.txt','.xml']);
 const escape=value=>String(value).replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+);)/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
